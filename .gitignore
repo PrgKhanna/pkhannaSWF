@@ -1,3 +1,13 @@
 .classpath
 .project
 .settings/
+target/
+*.class
+.idea/
+.eclipse
+*.log
+*.logs
+*.jar
+*.war
+*.ear
+*.iml
