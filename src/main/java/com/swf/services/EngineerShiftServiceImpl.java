@@ -74,7 +74,7 @@ public class EngineerShiftServiceImpl implements IEngineerShiftService {
 		List<EngineerShiftBO> ShiftBOsForADay = new ArrayList<EngineerShiftBO>();
 		for (int i = 1; i <= SWFConstants.NO_OF_SHIFTS; i++) {
 			// This will prevent same day allotment for an engineer
-			// we can have more shift level Rules
+			// we can have more shift level Rules same as filter Rules
 			if (!ShiftBOsForADay.isEmpty()) {
 				Set<EngineerBO> allocatedEngineers = ShiftBOsForADay.stream().map(sh -> sh.getEngineer())
 						.collect(Collectors.toSet());
