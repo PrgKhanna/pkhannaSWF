@@ -23,13 +23,20 @@ public class EngineerServiceImpl implements IEngineerService {
 
 	@Autowired
 	private ObjectMapperService mapper;
+	
+	@Autowired
+	private RedisService redisService;
 
 	/**
 	 * Return available Engineers
 	 */
 	public List<EngineerBO> getAllAvailableEngineers() {
 		LOGGER.info("Getting all available Engineers");
-		List<EngineerBO> availableEngineerBOs = null;
+		List<EngineerBO> availableEngineerBOs = (List<EngineerBO>) redisService.getValue("employees");
+		if(null != availableEngineerBOs) {
+			LOGGER.error("Got Available Engineers from cache");
+			return availableEngineerBOs;
+		}
 		try {
 			List<Engineer> availableEngineers = engineerRepository.findByActiveTrue();
 			if (null != availableEngineers) {

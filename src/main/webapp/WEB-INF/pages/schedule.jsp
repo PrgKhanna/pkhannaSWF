@@ -17,25 +17,22 @@
         </tr>
     </table>
 
-    <button id="fetchSchedule" class="btn btn-default" type="submit">Fetch</button>
-
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
 	<script type="text/javascript">
+	
+	$( document ).ready(function() {
+		$.get("http://localhost:8080/swf/schedule/get", function(data) {
 
-        $("#fetchSchedule").bind("click", function() {
+            $.each(data.schedules, function(i, schedule) {
 
-            $.get("http://localhost:8080/swf/schedule/get", function(data) {
-
-                $.each(data.schedules, function(i, schedule) {
-
-                    $(".data-schedule-js").append(
-                        "<tr><td>" + schedule.date + "</td>" +
-                        "<td>" + schedule.shifts[0].engineer.empId + ", " + schedule.shifts[0].engineer.name + ", " + schedule.shifts[0].engineer.phone + "</td>" +
-                        "<td>" + schedule.shifts[1].engineer.empId + ", " + schedule.shifts[1].engineer.name + ", " + schedule.shifts[1].engineer.phone + "</td></tr>");
-                });
-
+                $(".data-schedule-js").append(
+                    "<tr><td>" + schedule.date + "</td>" +
+                    "<td>" + schedule.shifts[0].engineer.empId + ", " + schedule.shifts[0].engineer.name + ", " + schedule.shifts[0].engineer.phone + "</td>" +
+                    "<td>" + schedule.shifts[1].engineer.empId + ", " + schedule.shifts[1].engineer.name + ", " + schedule.shifts[1].engineer.phone + "</td></tr>");
             });
+
         });
+	});
     </script>
 </body>
 </html>
