@@ -45,4 +45,14 @@ public class MaxAllocationFilterRule implements IFilterRule<EngineerBO, Engineer
 		return SWFFilterRules.MAX_ALLOCATION_RULE;
 	}
 
+	@Override
+	public Boolean isPre() {
+		return true;
+	}
+
+	@Override
+	public Boolean isPost() {
+		return false;
+	}
+
 }

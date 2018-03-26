@@ -45,4 +45,14 @@ public class ConsecutiveDayAllotmentFilterRule
 		return SWFFilterRules.CONSECUTIVE_DAY_ALLOCATION_RULE;
 	}
 
+	@Override
+	public Boolean isPre() {
+		return true;
+	}
+
+	@Override
+	public Boolean isPost() {
+		return false;
+	}
+
 }

@@ -14,4 +14,6 @@ public interface IEngineerShiftService {
 	List<EngineerShiftBO> assignShiftsForADate(Calendar date, List<EngineerBO> engineerBOs,
 			List<EngineerShiftBO> shiftsBOs);
 
+	void saveEngineerShifts(List<EngineerShiftBO> engineerShiftBOs);
+
 }

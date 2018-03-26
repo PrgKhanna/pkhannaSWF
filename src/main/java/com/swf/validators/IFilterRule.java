@@ -8,6 +8,10 @@ public interface IFilterRule<T, U> {
 
 	Boolean isApplicable();
 
+	Boolean isPre();
+
+	Boolean isPost();
+
 	String getType();
 
 }

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -17,6 +18,7 @@ import com.swf.mappers.ObjectMapperService;
 import com.swf.models.EngineerShiftBO;
 import com.swf.models.ScheduleBO;
 import com.swf.models.SchedulePeriodBO;
+import com.swf.utils.SWFDateFormatter;
 
 @Service
 public class SchedulerServiceImpl implements ISchedulerService {
@@ -32,14 +34,18 @@ public class SchedulerServiceImpl implements ISchedulerService {
 	@Autowired
 	private ISchedulePeriodService schedulePeriodService;
 
+	@Autowired
+	private RedisService redisService;
+
+	@SuppressWarnings("unchecked")
 	public List<ScheduleDTO> getCurrentSchedule() {
 		LOGGER.info("Getting Current Schedule");
 		List<ScheduleDTO> scheduleDTOS = null;
 		try {
 			SchedulePeriodBO schedulePeriodBO = schedulePeriodService.findActivePeriod();
 			if (null == schedulePeriodBO || isInBetweenPeriod(schedulePeriodBO, new Date())) {
+				// No need to do anything as everything is already there
 				LOGGER.info("Got Current Schedule : " + schedulePeriodBO);
-				// No need to do anything
 			} else {
 				LOGGER.info("No Current Date Schedule");
 				// means schedule period is not there corresponding to current date
@@ -47,9 +53,18 @@ public class SchedulerServiceImpl implements ISchedulerService {
 				schedulePeriodBO = schedulePeriodService.createNextSchedulePeriod(schedulePeriodBO);
 			}
 
+			String startDateStr = SWFDateFormatter.DATE_FORMAT_YYYY_MM_DD.format(schedulePeriodBO.getStartDate());
+			String endDateStr = SWFDateFormatter.DATE_FORMAT_YYYY_MM_DD.format(schedulePeriodBO.getEndDate());
+			String key = "schedules_" + startDateStr + "_" + endDateStr;
+			scheduleDTOS = (List<ScheduleDTO>) redisService.getValue(key);
+			if (null != scheduleDTOS) {
+				return scheduleDTOS;
+			}
+
 			List<EngineerShiftBO> engineerShiftBOs = engineerShiftService
 					.getShiftsForAPeriod(schedulePeriodBO.getStartDate(), schedulePeriodBO.getEndDate());
 			scheduleDTOS = getScheduleForShifts(engineerShiftBOs);
+			redisService.setValueWithTimeLimit(key, scheduleDTOS, 6, TimeUnit.HOURS);
 		} catch (Exception e) {
 			LOGGER.error("Failed to get Current Schedule");
 		}
