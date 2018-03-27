@@ -1,7 +1,6 @@
 package com.swf.services;
 
 import java.util.List;
-import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +22,7 @@ public class EngineerServiceImpl implements IEngineerService {
 
 	@Autowired
 	private ObjectMapperService mapper;
-	
+
 	@Autowired
 	private RedisService redisService;
 
@@ -33,7 +32,7 @@ public class EngineerServiceImpl implements IEngineerService {
 	public List<EngineerBO> getAllAvailableEngineers() {
 		LOGGER.info("Getting all available Engineers");
 		List<EngineerBO> availableEngineerBOs = (List<EngineerBO>) redisService.getValue("employees");
-		if(null != availableEngineerBOs) {
+		if (null != availableEngineerBOs) {
 			LOGGER.error("Got Available Engineers from cache");
 			return availableEngineerBOs;
 		}

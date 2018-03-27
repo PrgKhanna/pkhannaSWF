@@ -88,7 +88,7 @@ public class SchedulerServiceImpl implements ISchedulerService {
 		return scheduleDTOS;
 	}
 
-	private boolean isInBetweenPeriod(SchedulePeriodBO schedulePeriodBO, Date date) {
+	public boolean isInBetweenPeriod(SchedulePeriodBO schedulePeriodBO, Date date) {
 		return (date.compareTo(schedulePeriodBO.getStartDate()) >= 0
 				&& date.compareTo(schedulePeriodBO.getEndDate()) <= 0);
 	}

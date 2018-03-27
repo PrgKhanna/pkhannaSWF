@@ -14,6 +14,15 @@ public class EngineerShiftBO implements Serializable {
 	private Shift shift;
 
 	private Date date;
+	
+	public EngineerShiftBO() {};
+
+	public EngineerShiftBO(EngineerBO engineer, Shift shift, Date date) {
+		super();
+		this.engineer = engineer;
+		this.shift = shift;
+		this.date = date;
+	}
 
 	public EngineerBO getEngineer() {
 		return engineer;
