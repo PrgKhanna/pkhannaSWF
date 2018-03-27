@@ -22,6 +22,18 @@ public class EngineerBO implements Serializable {
 	private Date updatedOn;
 
 	private Boolean active;
+	
+	public EngineerBO() {};
+
+	public EngineerBO(Integer id, String name, String email, String phone, String empId, Boolean active) {
+		super();
+		this.id = id;
+		this.name = name;
+		this.email = email;
+		this.phone = phone;
+		this.empId = empId;
+		this.active = active;
+	}
 
 	public Integer getId() {
 		return id;
