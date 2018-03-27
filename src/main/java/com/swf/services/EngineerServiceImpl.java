@@ -1,6 +1,7 @@
 package com.swf.services;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +32,8 @@ public class EngineerServiceImpl implements IEngineerService {
 	 */
 	public List<EngineerBO> getAllAvailableEngineers() {
 		LOGGER.info("Getting all available Engineers");
-		List<EngineerBO> availableEngineerBOs = (List<EngineerBO>) redisService.getValue("employees");
+		String key = "employees";
+		List<EngineerBO> availableEngineerBOs = (List<EngineerBO>) redisService.getValue(key);
 		if (null != availableEngineerBOs) {
 			LOGGER.error("Got Available Engineers from cache");
 			return availableEngineerBOs;
@@ -41,6 +43,7 @@ public class EngineerServiceImpl implements IEngineerService {
 			if (null != availableEngineers) {
 				LOGGER.error("Got Available Engineers");
 				availableEngineerBOs = mapper.mapAsList(availableEngineers, EngineerBO.class);
+				redisService.setValueWithTimeLimit(key, availableEngineerBOs, 6, TimeUnit.HOURS);
 				return availableEngineerBOs;
 			}
 			LOGGER.error("Got NULL while getting Available Engineers");
@@ -54,11 +57,16 @@ public class EngineerServiceImpl implements IEngineerService {
 	@Override
 	public EngineerBO getById(Integer id) {
 		LOGGER.info("Getting Engineer By id");
-		EngineerBO engineerBO = null;
+		String key = "engineer_" + id;
+		EngineerBO engineerBO = (EngineerBO) redisService.getValue(key);
+		if (null != engineerBO) {
+			return engineerBO;
+		}
 		try {
 			Engineer engineer = engineerRepository.findOne(id);
 			if (engineer != null) {
 				engineerBO = mapper.map(engineer, EngineerBO.class);
+				redisService.setValueWithTimeLimit(key, engineerBO, 6, TimeUnit.HOURS);
 			} else {
 				LOGGER.error("Failed to get Engineer by id");
 			}

@@ -94,7 +94,7 @@ public class SchedulePeriodServiceImpl implements ISchedulePeriodService {
 
 		periodEnd.add(Calendar.DATE, 1);
 		Calendar startCal = (Calendar) periodStart.clone();
-		List<EngineerShiftBO> assignedShiftBOs = getAllAssignedShiftsToEngineers(availableEngineers, startCal,
+		List<EngineerShiftBO> assignedShiftBOs = saveAndGetAllAssignedShiftsToEngineers(availableEngineers, startCal,
 				periodEnd);
 
 		LOGGER.info("Assigned Shifts : " + assignedShiftBOs);
@@ -111,7 +111,7 @@ public class SchedulePeriodServiceImpl implements ISchedulePeriodService {
 		return newPeriodBO;
 	}
 
-	private List<EngineerShiftBO> getAllAssignedShiftsToEngineers(List<EngineerBO> availableEngineers,
+	private List<EngineerShiftBO> saveAndGetAllAssignedShiftsToEngineers(List<EngineerBO> availableEngineers,
 			Calendar startCal, Calendar endCal) {
 		List<EngineerShiftBO> assignedShiftBOs = new ArrayList<EngineerShiftBO>();
 		do {
@@ -121,7 +121,7 @@ public class SchedulePeriodServiceImpl implements ISchedulePeriodService {
 				startCal.add(Calendar.DATE, 1);
 				continue;
 			}
-			List<EngineerShiftBO> shiftsPerDay = engineerShiftService.assignShiftsForADate(date, availableEngineers,
+			List<EngineerShiftBO> shiftsPerDay = engineerShiftService.assignShiftsToEngineerForADate(date, availableEngineers,
 					assignedShiftBOs);
 			LOGGER.info("Assign Engineer Shifts for a date " + startCal.getTime() + " : " + shiftsPerDay);
 			startCal.add(Calendar.DATE, 1);

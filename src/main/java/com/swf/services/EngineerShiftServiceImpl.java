@@ -19,7 +19,7 @@ import com.swf.models.EngineerShiftBO;
 import com.swf.repositories.EngineerShiftRepository;
 import com.swf.rules.EngineerFilterHelper;
 import com.swf.rules.IFilterRule;
-import com.swf.utils.RandomNumber;
+import com.swf.utils.RandomEngineerSelector;
 import com.swf.utils.SWFConstants;
 import com.swf.utils.SWFDateFormatter;
 
@@ -40,19 +40,24 @@ public class EngineerShiftServiceImpl implements IEngineerShiftService {
 	@Autowired
 	private RedisService redisService;
 
+	@Autowired
+	private RandomEngineerSelector engineerSelector;
+
 	@SuppressWarnings("unchecked")
 	@Override
-	public List<EngineerShiftBO> getShiftsForAPeriod(Date startDate, Date endDate) {
+	public List<EngineerShiftBO> getShiftsForAPeriod(String startDateStr, String endDateStr) {
 		LOGGER.info("Getting Engineer Shifts for a period");
-		String startDateStr = SWFDateFormatter.DATE_FORMAT_YYYY_MM_DD.format(startDate);
-		String endDateStr = SWFDateFormatter.DATE_FORMAT_YYYY_MM_DD.format(endDate);
-		String key = "shifts_" + startDateStr + "_" + endDateStr;
-		List<EngineerShiftBO> engineerShiftBOs = (List<EngineerShiftBO>) redisService.getValue(key);
-		if (null != engineerShiftBOs) {
-			LOGGER.info("Got Engineer Shifts for a period from cache");
-			return engineerShiftBOs;
-		}
+		List<EngineerShiftBO> engineerShiftBOs = null;
 		try {
+			Date startDate = SWFDateFormatter.DATE_FORMAT_YYYY_MM_DD.parse(startDateStr);
+			Date endDate = SWFDateFormatter.DATE_FORMAT_YYYY_MM_DD.parse(endDateStr);
+			String key = "shifts_" + startDateStr + "_" + endDateStr;
+			engineerShiftBOs = (List<EngineerShiftBO>) redisService.getValue(key);
+			if (null != engineerShiftBOs) {
+				LOGGER.info("Got Engineer Shifts for a period from cache");
+				return engineerShiftBOs;
+			}
+
 			List<EngineerShift> engineerShifts = engineerShiftRepository.findByDateBetween(startDate, endDate);
 			if (null != engineerShifts) {
 				LOGGER.info("Got Engineer Shifts for a period");
@@ -68,7 +73,7 @@ public class EngineerShiftServiceImpl implements IEngineerShiftService {
 	}
 
 	@Override
-	public List<EngineerShiftBO> assignShiftsForADate(Calendar date, List<EngineerBO> availableEngineers,
+	public List<EngineerShiftBO> assignShiftsToEngineerForADate(Calendar date, List<EngineerBO> availableEngineers,
 			List<EngineerShiftBO> shiftsBOs) {
 		LOGGER.info("Assign Engineer Shifts for a date");
 		List<EngineerBO> engineerBOs = new ArrayList<EngineerBO>(availableEngineers);
@@ -82,11 +87,11 @@ public class EngineerShiftServiceImpl implements IEngineerShiftService {
 			applicableEngineers = applicableEngineersForEachShiftSelection(applicableEngineers, ShiftBOsForADay);
 
 			LOGGER.info("Applicable Engineer for Shift " + i + " : " + applicableEngineers.size());
-			int randomNumber = RandomNumber.getRandomNumberInRange(0, applicableEngineers.size() - 1);
+			EngineerBO selectedEngineer = engineerSelector.selectEngineer(applicableEngineers);
 			EngineerShiftBO shiftBO = new EngineerShiftBO();
 			shiftBO.setDate(date.getTime());
 			shiftBO.setShift(Shift.getShiftById((byte) i));
-			shiftBO.setEngineer(applicableEngineers.get(randomNumber));
+			shiftBO.setEngineer(selectedEngineer);
 			LOGGER.info("Selected Engineer for Shift " + i + " : " + shiftBO.getEngineer());
 			ShiftBOsForADay.add(shiftBO);
 		}
@@ -96,6 +101,7 @@ public class EngineerShiftServiceImpl implements IEngineerShiftService {
 
 	private List<EngineerBO> applicableEngineersForEachShiftSelection(List<EngineerBO> applicableEngineers,
 			List<EngineerShiftBO> ShiftBOsForADay) {
+		LOGGER.info("Applicable Rules during selection of Engineers for a Shift");
 		EngineerFilterHelper<EngineerShiftBO> postFilterHelper = new EngineerFilterHelper<EngineerShiftBO>();
 		postFilterHelper.setList(ShiftBOsForADay);
 		for (IFilterRule rule : filterRules) {
@@ -109,7 +115,7 @@ public class EngineerShiftServiceImpl implements IEngineerShiftService {
 	private List<EngineerBO> applicableEngineersPreShiftSelection(List<EngineerShiftBO> shiftsBOs,
 			List<EngineerBO> engineerBOs) {
 		List<EngineerBO> applicableEngineers = new ArrayList<EngineerBO>();
-
+		LOGGER.info("Applicable Rules during pre selection of Engineers for a Shift");
 		EngineerFilterHelper<EngineerShiftBO> preFilterHelper = new EngineerFilterHelper<EngineerShiftBO>();
 		preFilterHelper.setList(shiftsBOs);
 		for (IFilterRule rule : filterRules) {
@@ -122,6 +128,7 @@ public class EngineerShiftServiceImpl implements IEngineerShiftService {
 
 	@Override
 	public void saveEngineerShifts(List<EngineerShiftBO> engineerShiftBOs) {
+		LOGGER.info("Saving Engineer Shifts");
 		List<EngineerShift> assignedShifts = mapper.mapAsList(engineerShiftBOs, EngineerShift.class);
 		engineerShiftRepository.save(assignedShifts);
 	}

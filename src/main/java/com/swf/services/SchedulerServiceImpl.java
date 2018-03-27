@@ -18,6 +18,7 @@ import com.swf.mappers.ObjectMapperService;
 import com.swf.models.EngineerShiftBO;
 import com.swf.models.ScheduleBO;
 import com.swf.models.SchedulePeriodBO;
+import com.swf.utils.SWFConstants;
 import com.swf.utils.SWFDateFormatter;
 
 @Service
@@ -47,7 +48,7 @@ public class SchedulerServiceImpl implements ISchedulerService {
 				// No need to do anything as everything is already there
 				LOGGER.info("Got Current Schedule : " + schedulePeriodBO);
 			} else {
-				LOGGER.info("No Current Date Schedule");
+				LOGGER.info("No Current Date Schedule, creating for next " + SWFConstants.DAY_IN_PERIOD + " days");
 				// means schedule period is not there corresponding to current date
 				// Save schedule for next Period and return schedule Period
 				schedulePeriodBO = schedulePeriodService.createNextSchedulePeriod(schedulePeriodBO);
@@ -60,9 +61,8 @@ public class SchedulerServiceImpl implements ISchedulerService {
 			if (null != scheduleDTOS) {
 				return scheduleDTOS;
 			}
-
-			List<EngineerShiftBO> engineerShiftBOs = engineerShiftService
-					.getShiftsForAPeriod(schedulePeriodBO.getStartDate(), schedulePeriodBO.getEndDate());
+			LOGGER.info("Getting Engineer Shifts for the period : " + startDateStr + " - " + endDateStr);
+			List<EngineerShiftBO> engineerShiftBOs = engineerShiftService.getShiftsForAPeriod(startDateStr, endDateStr);
 			scheduleDTOS = getScheduleForShifts(engineerShiftBOs);
 			redisService.setValueWithTimeLimit(key, scheduleDTOS, 6, TimeUnit.HOURS);
 		} catch (Exception e) {

@@ -9,9 +9,9 @@ import com.swf.models.EngineerShiftBO;
 
 public interface IEngineerShiftService {
 
-	List<EngineerShiftBO> getShiftsForAPeriod(Date startDate, Date endDate);
+	List<EngineerShiftBO> getShiftsForAPeriod(String startDate, String endDate);
 
-	List<EngineerShiftBO> assignShiftsForADate(Calendar date, List<EngineerBO> engineerBOs,
+	List<EngineerShiftBO> assignShiftsToEngineerForADate(Calendar date, List<EngineerBO> engineerBOs,
 			List<EngineerShiftBO> shiftsBOs);
 
 	void saveEngineerShifts(List<EngineerShiftBO> engineerShiftBOs);
