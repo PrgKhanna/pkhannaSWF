@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -12,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.swf.caching.ScheduleServiceCacheImpl;
 import com.swf.controllers.ScheduleController;
 import com.swf.dtos.ScheduleDTO;
 import com.swf.mappers.ObjectMapperService;
@@ -36,7 +36,7 @@ public class SchedulerServiceImpl implements ISchedulerService {
 	private ISchedulePeriodService schedulePeriodService;
 
 	@Autowired
-	private RedisService redisService;
+	private ScheduleServiceCacheImpl scheduleServiceCacheImpl;
 
 	@SuppressWarnings("unchecked")
 	public List<ScheduleDTO> getCurrentSchedule() {
@@ -57,14 +57,12 @@ public class SchedulerServiceImpl implements ISchedulerService {
 			String startDateStr = SWFDateFormatter.DATE_FORMAT_YYYY_MM_DD.format(schedulePeriodBO.getStartDate());
 			String endDateStr = SWFDateFormatter.DATE_FORMAT_YYYY_MM_DD.format(schedulePeriodBO.getEndDate());
 			String key = "schedules_" + startDateStr + "_" + endDateStr;
-			scheduleDTOS = (List<ScheduleDTO>) redisService.getValue(key);
-			if (null != scheduleDTOS) {
-				return scheduleDTOS;
-			}
+			scheduleDTOS = scheduleServiceCacheImpl.getAll(key);
+
 			LOGGER.info("Getting Engineer Shifts for the period : " + startDateStr + " - " + endDateStr);
 			List<EngineerShiftBO> engineerShiftBOs = engineerShiftService.getShiftsForAPeriod(startDateStr, endDateStr);
 			scheduleDTOS = getScheduleForShifts(engineerShiftBOs);
-			redisService.setValueWithTimeLimit(key, scheduleDTOS, 6, TimeUnit.HOURS);
+			scheduleServiceCacheImpl.saveAll(key, scheduleDTOS);
 		} catch (Exception e) {
 			LOGGER.error("Failed to get Current Schedule");
 		}

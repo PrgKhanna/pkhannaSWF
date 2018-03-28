@@ -4,13 +4,13 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.swf.caching.EngineerShiftServiceCacheImpl;
 import com.swf.entities.EngineerShift;
 import com.swf.enums.Shift;
 import com.swf.mappers.ObjectMapperService;
@@ -38,12 +38,11 @@ public class EngineerShiftServiceImpl implements IEngineerShiftService {
 	private List<IFilterRule> filterRules;
 
 	@Autowired
-	private RedisService redisService;
+	private EngineerShiftServiceCacheImpl engineerShiftServiceCacheImpl;
 
 	@Autowired
 	private RandomEngineerSelector engineerSelector;
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public List<EngineerShiftBO> getShiftsForAPeriod(String startDateStr, String endDateStr) {
 		LOGGER.info("Getting Engineer Shifts for a period");
@@ -52,17 +51,13 @@ public class EngineerShiftServiceImpl implements IEngineerShiftService {
 			Date startDate = SWFDateFormatter.DATE_FORMAT_YYYY_MM_DD.parse(startDateStr);
 			Date endDate = SWFDateFormatter.DATE_FORMAT_YYYY_MM_DD.parse(endDateStr);
 			String key = "shifts_" + startDateStr + "_" + endDateStr;
-			engineerShiftBOs = (List<EngineerShiftBO>) redisService.getValue(key);
-			if (null != engineerShiftBOs) {
-				LOGGER.info("Got Engineer Shifts for a period from cache");
-				return engineerShiftBOs;
-			}
+			engineerShiftBOs = engineerShiftServiceCacheImpl.getAll(key);
 
 			List<EngineerShift> engineerShifts = engineerShiftRepository.findByDateBetween(startDate, endDate);
 			if (null != engineerShifts) {
 				LOGGER.info("Got Engineer Shifts for a period");
 				engineerShiftBOs = mapper.mapAsList(engineerShifts, EngineerShiftBO.class);
-				redisService.setValueWithTimeLimit(key, engineerShiftBOs, 6, TimeUnit.HOURS);
+				engineerShiftServiceCacheImpl.saveAll(key, engineerShiftBOs);
 			} else {
 				LOGGER.info("Failed to get Engineer Shifts for a period");
 			}

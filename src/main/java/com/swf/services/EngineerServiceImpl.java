@@ -1,13 +1,13 @@
 package com.swf.services;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.swf.caching.EngineerServiceCacheImpl;
 import com.swf.entities.Engineer;
 import com.swf.mappers.ObjectMapperService;
 import com.swf.models.EngineerBO;
@@ -25,7 +25,7 @@ public class EngineerServiceImpl implements IEngineerService {
 	private ObjectMapperService mapper;
 
 	@Autowired
-	private RedisService redisService;
+	private EngineerServiceCacheImpl engineerServiceCacheImpl;
 
 	/**
 	 * Return available Engineers
@@ -33,7 +33,7 @@ public class EngineerServiceImpl implements IEngineerService {
 	public List<EngineerBO> getAllAvailableEngineers() {
 		LOGGER.info("Getting all available Engineers");
 		String key = "employees";
-		List<EngineerBO> availableEngineerBOs = (List<EngineerBO>) redisService.getValue(key);
+		List<EngineerBO> availableEngineerBOs = engineerServiceCacheImpl.getAll(key);
 		if (null != availableEngineerBOs) {
 			LOGGER.error("Got Available Engineers from cache");
 			return availableEngineerBOs;
@@ -43,7 +43,7 @@ public class EngineerServiceImpl implements IEngineerService {
 			if (null != availableEngineers) {
 				LOGGER.error("Got Available Engineers");
 				availableEngineerBOs = mapper.mapAsList(availableEngineers, EngineerBO.class);
-				redisService.setValueWithTimeLimit(key, availableEngineerBOs, 6, TimeUnit.HOURS);
+				engineerServiceCacheImpl.saveAll(key, availableEngineerBOs);
 				return availableEngineerBOs;
 			}
 			LOGGER.error("Got NULL while getting Available Engineers");
@@ -58,15 +58,12 @@ public class EngineerServiceImpl implements IEngineerService {
 	public EngineerBO getById(Integer id) {
 		LOGGER.info("Getting Engineer By id");
 		String key = "engineer_" + id;
-		EngineerBO engineerBO = (EngineerBO) redisService.getValue(key);
-		if (null != engineerBO) {
-			return engineerBO;
-		}
+		EngineerBO engineerBO = engineerServiceCacheImpl.get(key);
 		try {
 			Engineer engineer = engineerRepository.findOne(id);
 			if (engineer != null) {
 				engineerBO = mapper.map(engineer, EngineerBO.class);
-				redisService.setValueWithTimeLimit(key, engineerBO, 6, TimeUnit.HOURS);
+				engineerServiceCacheImpl.save(key, engineerBO);
 			} else {
 				LOGGER.error("Failed to get Engineer by id");
 			}

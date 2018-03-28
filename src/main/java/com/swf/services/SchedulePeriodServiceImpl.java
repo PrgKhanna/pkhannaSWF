@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import javax.transaction.Transactional;
 
@@ -13,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.swf.caching.SchedulePeriodServiceCacheImpl;
 import com.swf.entities.SchedulePeriod;
 import com.swf.mappers.ObjectMapperService;
 import com.swf.models.EngineerBO;
@@ -38,17 +38,13 @@ public class SchedulePeriodServiceImpl implements ISchedulePeriodService {
 	private IEngineerShiftService engineerShiftService;
 
 	@Autowired
-	private RedisService redisService;
+	private SchedulePeriodServiceCacheImpl schedulePeriodServiceCacheImpl;
 
 	@Override
 	public SchedulePeriodBO findActivePeriod() {
 		LOGGER.info("Getting active Period");
 		String key = "active_period";
-		SchedulePeriodBO schedulePeriodBO = (SchedulePeriodBO) redisService.getValue(key);
-		if (null != schedulePeriodBO) {
-			LOGGER.info("Got Active Period from Cache");
-			return schedulePeriodBO;
-		}
+		SchedulePeriodBO schedulePeriodBO = schedulePeriodServiceCacheImpl.get(key);
 		try {
 			SchedulePeriod schedulePeriod = schedulePeriodRepository.findByActiveTrue();
 			if (null != schedulePeriod) {
@@ -68,7 +64,7 @@ public class SchedulePeriodServiceImpl implements ISchedulePeriodService {
 		SchedulePeriod previousPeriod = mapper.map(schedulePeriodBO, SchedulePeriod.class);
 		previousPeriod.setActive(false);
 		schedulePeriodRepository.save(previousPeriod);
-		redisService.invalidate("active_period");
+		schedulePeriodServiceCacheImpl.delete("active_period");
 	}
 
 	@Override
@@ -79,7 +75,7 @@ public class SchedulePeriodServiceImpl implements ISchedulePeriodService {
 		newPeriod.setEndDate(endDate);
 		newPeriod = schedulePeriodRepository.save(newPeriod);
 		SchedulePeriodBO schedulePeriodBO = mapper.map(newPeriod, SchedulePeriodBO.class);
-		redisService.setValueWithTimeLimit("active_period", schedulePeriodBO, 6, TimeUnit.HOURS);
+		schedulePeriodServiceCacheImpl.save("active_period", schedulePeriodBO);
 		return schedulePeriodBO;
 	}
 
@@ -121,8 +117,8 @@ public class SchedulePeriodServiceImpl implements ISchedulePeriodService {
 				startCal.add(Calendar.DATE, 1);
 				continue;
 			}
-			List<EngineerShiftBO> shiftsPerDay = engineerShiftService.assignShiftsToEngineerForADate(date, availableEngineers,
-					assignedShiftBOs);
+			List<EngineerShiftBO> shiftsPerDay = engineerShiftService.assignShiftsToEngineerForADate(date,
+					availableEngineers, assignedShiftBOs);
 			LOGGER.info("Assign Engineer Shifts for a date " + startCal.getTime() + " : " + shiftsPerDay);
 			startCal.add(Calendar.DATE, 1);
 			assignedShiftBOs.addAll(shiftsPerDay);
