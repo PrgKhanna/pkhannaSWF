@@ -10,7 +10,6 @@ import javax.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.swf.caching.SchedulePeriodServiceCacheImpl;
@@ -41,9 +40,6 @@ public class SchedulePeriodServiceImpl implements ISchedulePeriodService {
 
 	@Autowired
 	private SchedulePeriodServiceCacheImpl schedulePeriodServiceCacheImpl;
-
-	@Value("${schedule.span.weeks}")
-	private Integer scheduleSpanWeeks;
 
 	@Override
 	public SchedulePeriodBO findActivePeriod() {
@@ -135,7 +131,7 @@ public class SchedulePeriodServiceImpl implements ISchedulePeriodService {
 	private Calendar getDate(Date date) {
 		Calendar calendar = Calendar.getInstance();
 		calendar.setTime(date);
-		calendar.add(Calendar.DATE, scheduleSpanWeeks * SWFConstants.NO_OF_DAYS_IN_WEEK);
+		calendar.add(Calendar.DATE, SWFConstants.SCHEDULE_WEEK_SPAN * SWFConstants.NO_OF_DAYS_IN_WEEK);
 		return calendar;
 	}
 
