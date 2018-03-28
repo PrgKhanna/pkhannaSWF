@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.swf.models.EngineerBO;
@@ -15,7 +16,10 @@ import com.swf.models.EngineerShiftBO;
 public class MaxAllocationFilterRule implements IFilterRule<EngineerBO, EngineerFilterHelper<EngineerShiftBO>> {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MaxAllocationFilterRule.class);
-
+	
+	@Value("${engineer.allowed.shift.per.schedule.span}")
+	private Integer engineerAllowedShifPerScheduleSpan;
+	
 	@Override
 	public List<EngineerBO> filterRule(List<EngineerBO> engineerBOs, EngineerFilterHelper<EngineerShiftBO> helper) {
 		LOGGER.info("Applying MaxAllocationFilterRule");
@@ -25,7 +29,7 @@ public class MaxAllocationFilterRule implements IFilterRule<EngineerBO, Engineer
 			Map<EngineerBO, Long> engineerToShiftCountMap = shifts.stream()
 					.collect(Collectors.groupingBy(EngineerShiftBO::getEngineer, Collectors.counting()));
 			List<EngineerBO> notApplicableEngineerBOs = engineerToShiftCountMap.keySet().stream()
-					.filter(k -> engineerToShiftCountMap.get(k) == 2).collect(Collectors.toList());
+					.filter(k -> engineerToShiftCountMap.get(k) == engineerAllowedShifPerScheduleSpan.intValue()).collect(Collectors.toList());
 
 			List<EngineerBO> applicableEngineers = engineerBOs;
 			applicableEngineers.removeAll(notApplicableEngineerBOs);

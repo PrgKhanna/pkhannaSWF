@@ -38,7 +38,6 @@ public class SchedulerServiceImpl implements ISchedulerService {
 	@Autowired
 	private ScheduleServiceCacheImpl scheduleServiceCacheImpl;
 
-	@SuppressWarnings("unchecked")
 	public List<ScheduleDTO> getCurrentSchedule() {
 		LOGGER.info("Getting Current Schedule");
 		List<ScheduleDTO> scheduleDTOS = null;
