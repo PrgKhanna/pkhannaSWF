@@ -45,7 +45,6 @@ public class SchedulePeriodServiceImpl implements ISchedulePeriodService {
 	public SchedulePeriodBO findActivePeriod() {
 		LOGGER.info("Getting active Period");
 		String key = "active_period";
-		schedulePeriodServiceCacheImpl.delete(key);
 		SchedulePeriodBO schedulePeriodBO = schedulePeriodServiceCacheImpl.get(key);
 		try {
 			SchedulePeriod schedulePeriod = schedulePeriodRepository.findByActiveTrue();
