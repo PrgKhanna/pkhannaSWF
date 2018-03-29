@@ -1,6 +1,7 @@
 package com.swf.services;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,7 @@ import com.swf.models.ScheduleBO;
 import com.swf.models.SchedulePeriodBO;
 import com.swf.utils.SWFConstants;
 import com.swf.utils.SWFDateFormatter;
+import com.swf.utils.ServiceHelper;
 
 @Service
 public class SchedulerServiceImpl implements ISchedulerService {
@@ -38,16 +40,30 @@ public class SchedulerServiceImpl implements ISchedulerService {
 	@Autowired
 	private ScheduleServiceCacheImpl scheduleServiceCacheImpl;
 
+	@Autowired
+	private ServiceHelper serviceHelper;
+
 	public List<ScheduleDTO> getCurrentSchedule() {
 		LOGGER.info("Getting Current Schedule");
 		List<ScheduleDTO> scheduleDTOS = null;
 		try {
 			SchedulePeriodBO schedulePeriodBO = schedulePeriodService.findActivePeriod();
-			if (null == schedulePeriodBO || isInBetweenPeriod(schedulePeriodBO, new Date())) {
-				// No need to do anything as everything is already there
-				LOGGER.info("Got Current Schedule : " + schedulePeriodBO);
+			boolean createNextSchedule = false;
+			if (null != schedulePeriodBO) {
+				if (isInBetweenPeriod(schedulePeriodBO, new Date())) {
+					// No need to do anything as everything is already there
+					LOGGER.info("Got Current Schedule : " + schedulePeriodBO);
+				} else {
+					LOGGER.info("No Current Date Schedule, creating for next " + SWFConstants.DAY_IN_PERIOD + " days");
+					createNextSchedule = true;
+				}
 			} else {
-				LOGGER.info("No Current Date Schedule, creating for next " + SWFConstants.DAY_IN_PERIOD + " days");
+				// TODO: create a previous period
+				schedulePeriodBO = createDefaultPreviousSchedulePeriod();
+				createNextSchedule = true;
+			}
+
+			if (createNextSchedule) {
 				// means schedule period is not there corresponding to current date
 				// Save schedule for next Period and return schedule Period
 				schedulePeriodBO = schedulePeriodService.createNextSchedulePeriod(schedulePeriodBO);
@@ -67,6 +83,17 @@ public class SchedulerServiceImpl implements ISchedulerService {
 		}
 		LOGGER.info("Got Current Schedule : " + scheduleDTOS);
 		return scheduleDTOS;
+	}
+
+	private SchedulePeriodBO createDefaultPreviousSchedulePeriod() {
+		SchedulePeriodBO schedulePeriodBO;
+		schedulePeriodBO = new SchedulePeriodBO();
+		Calendar endDate = serviceHelper.getDefaultPreviousPeriodEndDate();
+		Calendar startDate = serviceHelper.getDefaultPreviousPeriodStartDate(endDate);
+		schedulePeriodBO.setActive(true);
+		schedulePeriodBO.setStartDate(startDate.getTime());
+		schedulePeriodBO.setEndDate(endDate.getTime());
+		return schedulePeriodBO;
 	}
 
 	private List<ScheduleDTO> getScheduleForShifts(List<EngineerShiftBO> engineerShiftBOs) {
