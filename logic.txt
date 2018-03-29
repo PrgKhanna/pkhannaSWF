@@ -1,0 +1,28 @@
+
+Basic Description of the logic :
+
+Assumption: i have 10 engineers, 2 shifts for 10 days.
+
+ScheduleController gets the Schedule response. Controller calls ScheduleService which gets the current schedule,
+which internally gets the Active Period.
+
+if active Period is not there, we create a dummy period with previous date range, so that we treat is same as
+creating next period as a case in which we have active period but current date is out of the period.
+if active Period is already there and current date lies between the period, we return Engineer shifts
+as its already saved in db while creating a schedule.
+
+When we create a next period, we invalidate the previous schedule.
+We assign daily shifts by applying 2 types of Rules:
+  1 - Pre Availability Rules, to check availability of applicable engineers.
+      for eg : Max Allocated Shift rule, Consecutive days not allowed rules
+      
+  2 - Daily Shift level Engineer availability  of applicable engineers.
+      for eg : Same day Shifts not allowed, Engineer A should not have shift on same day as Engineer B
+      
+We have Rule Interface which have flags like pre, post , applicable flags to create different level Rules.
+
+We also have EngineerSelector which helps with selection of Engineer based on the algorithm.
+
+After all this is done and shifts are allocated , we save all Shifts for all days at once.
+
+Caching & Saving necessary details to improve. the Response time 
