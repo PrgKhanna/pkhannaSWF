@@ -50,15 +50,17 @@ public class SchedulerServiceImpl implements ISchedulerService {
 			SchedulePeriodBO schedulePeriodBO = schedulePeriodService.findActivePeriod();
 			boolean createNextSchedule = false;
 			if (null != schedulePeriodBO) {
-				if (isInBetweenPeriod(schedulePeriodBO, new Date())) {
+				Date currentDate = new Date();
+				if (isInBetweenPeriod(schedulePeriodBO, currentDate) || isNextPeriod(schedulePeriodBO, currentDate)) {
 					// No need to do anything as everything is already there
-					LOGGER.info("Got Current Schedule : " + schedulePeriodBO);
+					LOGGER.info("Got Current/Next Schedule : " + schedulePeriodBO);
 				} else {
+					// When active schedule is over
 					LOGGER.info("No Current Date Schedule, creating for next " + SWFConstants.DAY_IN_PERIOD + " days");
 					createNextSchedule = true;
 				}
 			} else {
-				// TODO: create a previous period
+				// create a previous period to use same next Schedule create method
 				schedulePeriodBO = createDefaultPreviousSchedulePeriod();
 				createNextSchedule = true;
 			}
@@ -115,6 +117,10 @@ public class SchedulerServiceImpl implements ISchedulerService {
 	public boolean isInBetweenPeriod(SchedulePeriodBO schedulePeriodBO, Date date) {
 		return (date.compareTo(schedulePeriodBO.getStartDate()) >= 0
 				&& date.compareTo(schedulePeriodBO.getEndDate()) <= 0);
+	}
+
+	public boolean isNextPeriod(SchedulePeriodBO schedulePeriodBO, Date date) {
+		return (date.compareTo(schedulePeriodBO.getStartDate()) < 0);
 	}
 
 }
